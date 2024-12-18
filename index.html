@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    body {
+        font-family: sans-serif;
+        max-width: 800px;
+        margin: 20px auto;
+        line-height: 1.5;
+        color: #333;
+    }
+
+    h1 {
+        text-align: center;
+        font-size: 2em;
+        margin-bottom: 20px;
+        color: #074D6C;
+    }
+
+    .recipe-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .ingredients-section {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .image-section {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .ingredients-section h2,
+    .image-section h2 {
+        font-size: 1.2em;
+        margin-bottom: 10px;
+        color: #074D6C;
+    }
+
+    .ingredients-list {
+        list-style: decimal inside;
+        padding: 0;
+        margin: 0;
+    }
+
+    .instructions-list {
+        list-style: decimal inside;
+        padding: 0;
+        margin: 0;
+    }
+
+    .hints-list {
+        list-style: none;
+        padding-left: 20px;
+        margin-top: 5px;
+    }
+
+    .ingredients-list li,
+    .instructions-list li,
+    .hints-list li {
+        margin: 5px 0;
+        border: 1px solid #ccc;
+        padding: 8px;
+        border-radius: 5px;
+        min-height: 20px;
+        position: relative;
+        white-space: nowrap; 
+        overflow: hidden;
+    }
+
+    .remove-btn {
+        position: absolute;
+        right: 8px;
+        top: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        color: #999;
+    }
+
+    .remove-btn:hover {
+        color: #666;
+    }
+
+    .image-placeholder {
+        display: block;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        height: 200px;
+        width: 100%;
+        background: #f9f9f9;
+        text-align: center;
+        line-height: 200px;
+        color: #999;
+        cursor: pointer;
+    }
+
+    .instructions {
+        margin-top: 20px;
+    }
+
+    .instructions h2 {
+        font-size: 1.2em;
+        margin-bottom: 10px;
+        color: #074D6C;
+    }
+
+    .dropdown {
+        position: absolute;
+        border: 1px solid #ccc;
+        background: #fff;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        z-index: 999;
+        display: none;
+    }
+
+    .dropdown li {
+        list-style: none;
+        padding: 5px 10px;
+        cursor: pointer;
+    }
+
+    .dropdown li:hover {
+        background: #eee;
+    }
+
+    .marker {
+        display: inline-block;
+        width: 1px;
+        height: 1em;
+        vertical-align: middle;
+    }
+
+    .add-button {
+        background: #074D6C;
+        color: #fff;
+        border: none;
+        padding: 8px 12px;
+        cursor: pointer;
+        border-radius: 5px;
+        margin-top: 10px;
+        font-size: 0.9em;
+        margin-right: 10px;
+    }
+
+    .add-button:hover {
+        background: #063a53;
+    }
+
+    .add-hint-button {
+        background: #FFA500; /* Bright orange */
+        color: #fff;
+        border: none;
+        padding: 5px 8px;
+        cursor: pointer;
+        border-radius: 5px;
+        font-size: 0.8em;
+        margin-left: 10px;
+    }
+
+    .add-hint-button:hover {
+        background: #e59400;
+    }
+
+</style>
+</head>
+<body>
+
+<h1 contenteditable="true">Recipe Title</h1>
+
+<div class="recipe-container">
+    <div class="image-section">
+        <h2>Image</h2>
+        <label class="image-placeholder" for="imageUpload">Click to Upload Image</label>
+        <input type="file" id="imageUpload" style="display:none" accept="image/*">
+        <img id="recipeImage" src="" alt="" style="display:none; width:100%; margin-top:10px; border-radius:5px;">
+    </div>
+    <div class="ingredients-section">
+        <h2>Ingredients</h2>
+        <ol class="ingredients-list" id="ingredientsList">
+            <li contenteditable="true">Example ingredient<span class="remove-btn">x</span></li>
+        </ol>
+        <button class="add-button" id="addIngredientBtn">Add Ingredient</button>
+    </div>
+</div>
+
+<div class="instructions">
+    <h2>Instructions</h2>
+    <ol class="instructions-list" id="instructionsList">
+        <li contenteditable="true">
+            Type '@' to see ingredient suggestions...
+            <span class="remove-btn">x</span>
+            <button class="add-hint-button">Add Hint</button>
+            <ul class="hints-list"></ul>
+        </li>
+    </ol>
+    <button class="add-button" id="addInstructionBtn">Add Instruction</button>
+</div>
+
+<ul class="dropdown" id="ingredientDropdown"></ul>
+
+<script>
+// Handle image upload
+const imageUpload = document.getElementById('imageUpload');
+const recipeImage = document.getElementById('recipeImage');
+const imagePlaceholder = document.querySelector('.image-placeholder');
+
+imagePlaceholder.addEventListener('click', () => {
+    imageUpload.click();
+});
+
+imageUpload.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            recipeImage.src = event.target.result;
+            recipeImage.style.display = 'block';
+            imagePlaceholder.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+const ingredientsList = document.getElementById('ingredientsList');
+const instructionsList = document.getElementById('instructionsList');
+const addIngredientBtn = document.getElementById('addIngredientBtn');
+const addInstructionBtn = document.getElementById('addInstructionBtn');
+const ingredientDropdown = document.getElementById('ingredientDropdown');
+
+function preventEnterNewLine(e) {
+    if(e.key === 'Enter') {
+        e.preventDefault();
+    }
+}
+
+// Attach keydown event to existing items
+document.querySelectorAll('li[contenteditable=true]').forEach(li => {
+    li.addEventListener('keydown', preventEnterNewLine);
+});
+
+// Create a removable list item
+function createListItem(text) {
+    const li = document.createElement('li');
+    li.contentEditable = "true";
+    li.innerText = text;
+    li.addEventListener('keydown', preventEnterNewLine);
+
+    const removeBtn = document.createElement('span');
+    removeBtn.className = 'remove-btn';
+    removeBtn.innerText = 'x';
+    removeBtn.setAttribute('contenteditable', 'false');
+    removeBtn.addEventListener('click', () => {
+        li.remove();
+        updateIngredients();
+    });
+
+    li.appendChild(removeBtn);
+    return li;
+}
+
+// Create a new instruction item with add hint button
+function createInstructionItem(text) {
+    const li = document.createElement('li');
+    li.contentEditable = "true";
+    li.innerText = text;
+    li.addEventListener('keydown', preventEnterNewLine);
+
+    // Remove button
+    const removeBtn = document.createElement('span');
+    removeBtn.className = 'remove-btn';
+    removeBtn.innerText = 'x';
+    removeBtn.setAttribute('contenteditable', 'false');
+    removeBtn.addEventListener('click', () => {
+        li.remove();
+    });
+    li.appendChild(removeBtn);
+
+    // Add Hint button
+    const addHintBtn = document.createElement('button');
+    addHintBtn.className = 'add-hint-button';
+    addHintBtn.innerText = 'Add Hint';
+    addHintBtn.setAttribute('contenteditable', 'false');
+    li.appendChild(addHintBtn);
+
+    // Hints list
+    const hintsUl = document.createElement('ul');
+    hintsUl.className = 'hints-list';
+    li.appendChild(hintsUl);
+
+    // Add hint on click
+    addHintBtn.addEventListener('click', () => {
+        const hintLi = document.createElement('li');
+        hintLi.contentEditable = "true";
+        hintLi.innerText = "New hint";
+        hintLi.addEventListener('keydown', preventEnterNewLine);
+
+        const hintRemoveBtn = document.createElement('span');
+        hintRemoveBtn.className = 'remove-btn';
+        hintRemoveBtn.innerText = 'x';
+        hintRemoveBtn.setAttribute('contenteditable', 'false');
+        hintRemoveBtn.addEventListener('click', () => {
+            hintLi.remove();
+        });
+        hintLi.appendChild(hintRemoveBtn);
+
+        hintsUl.appendChild(hintLi);
+        hintLi.focus();
+    });
+
+    return li;
+}
+
+// Add new ingredient
+addIngredientBtn.addEventListener('click', () => {
+    const li = createListItem("New ingredient");
+    ingredientsList.appendChild(li);
+    li.focus();
+    updateIngredients();
+});
+
+// Add new instruction
+addInstructionBtn.addEventListener('click', () => {
+    const li = createInstructionItem("New instruction");
+    instructionsList.appendChild(li);
+    li.focus();
+});
+
+// Handle '@' dropdown in instructions
+let ingredients = [];
+function updateIngredients() {
+    ingredients = [];
+    document.querySelectorAll('.ingredients-list li').forEach(li => {
+        const text = li.innerText.replace('x','').trim(); // remove 'x' from the end
+        if(text) ingredients.push(text);
+    });
+}
+updateIngredients();
+
+ingredientsList.addEventListener('input', updateIngredients);
+
+let markerSpan = null;
+
+instructionsList.addEventListener('input', (e) => {
+    const selection = window.getSelection();
+    if(!selection.rangeCount) return;
+    const range = selection.getRangeAt(0);
+    const text = range.startContainer.textContent;
+
+    // Check if '@' was just typed
+    const atIndex = text ? text.lastIndexOf('@') : -1;
+    if(atIndex > -1) {
+        // Insert a marker at '@'
+        range.setStart(range.startContainer, atIndex);
+        range.setEnd(range.startContainer, atIndex+1);
+        
+        // Remove '@' and replace it with a marker
+        range.deleteContents();
+        const newMarker = document.createElement('span');
+        newMarker.className = 'marker';
+        newMarker.id = 'atMarker';
+        range.insertNode(newMarker);
+
+        range.setStartAfter(newMarker);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        markerSpan = newMarker;
+
+        // Position dropdown near the marker
+        const rect = newMarker.getBoundingClientRect();
+        ingredientDropdown.style.top = (window.scrollY + rect.bottom) + 'px';
+        ingredientDropdown.style.left = (window.scrollX + rect.left) + 'px';
+
+        // Populate dropdown
+        ingredientDropdown.innerHTML = ingredients.map(i => `<li>${i}</li>`).join('');
+        ingredientDropdown.style.display = 'block';
+    } else {
+        ingredientDropdown.style.display = 'none';
+    }
+});
+
+ingredientDropdown.addEventListener('click', (e) => {
+    if(e.target.tagName.toLowerCase() === 'li' && markerSpan) {
+        const ingredient = e.target.innerText;
+        
+        // Replace marker with bolded ingredient
+        const boldNode = document.createElement('strong');
+        boldNode.textContent = ingredient;
+        markerSpan.replaceWith(boldNode);
+
+        // Move cursor after inserted ingredient
+        const sel = window.getSelection();
+        const range = document.createRange();
+        range.setStartAfter(boldNode);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+
+        ingredientDropdown.style.display = 'none';
+        markerSpan = null;
+    }
+});
+
+// Hide dropdown if clicked outside
+document.addEventListener('click', (e) => {
+    if(!ingredientDropdown.contains(e.target) && !instructionsList.contains(e.target)) {
+        ingredientDropdown.style.display = 'none';
+    }
+});
+</script>
+</body>
+</html>
